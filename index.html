@@ -158,6 +158,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--panel2);color:var(--mut);border:1px solid var(--line)}
 .tag.org{background:var(--pink-dim);color:#ff9ec7;border-color:transparent}
 .tag.ward{background:var(--blue-dim);color:#7fc0f0;border-color:transparent}
+.tag.icn{background:#2a1e3a;color:#c9a9f0;border-color:transparent}
 .tag.od{background:var(--red);color:#fff;border-color:transparent}
 .tag.noform{background:var(--pink);color:#1a0410;border-color:transparent}
 .card-foot{display:flex;gap:8px;margin-top:12px}
@@ -446,7 +447,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
 <div id="toast"></div>
 
 <script>
-const GAS_URL = "";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzSxO5SSlGLHxOAvRRa9kSSIV6JEmmZG-58mweUAbC90WI_fO4VEnwOptsHcl3THZqYHQ/exec";
 const UKI_CREDS = { "uki":"uki123" };
 const WARD_PASS_DEFAULT = "ward123";
 const OVERDUE_DAYS = 7;
@@ -458,6 +459,8 @@ const ICN_LIST = ["ICN MARIAM","ICN MARIA","ICN ROSENA","DR ANEESA","DR SAIHAH"]
 function wardToUser(ward){
   return String(ward||"").toLowerCase().replace(/[^a-z0-9]/g,"");
 }
+// samakan nama ward utk padanan: huruf besar, buang semua ruang
+function wardKey(w){ return String(w||"").toUpperCase().replace(/\s+/g,"").trim(); }
 /* ---- KREDENSIAL WARD (demo) ----
    Bila GAS deploy, senarai ni datang dari tab "Users" (col A username, col B password, col C ward).
    Format demo: setiap ward, password = kod + "123". Uki boleh ubah dalam Sheet nanti. */
@@ -491,8 +494,8 @@ const WARD_ICN = {
 };
 function inchargeFor(p){
   if(p.incharge && String(p.incharge).trim()!=="") return String(p.incharge).trim().toUpperCase();
-  const w=String(p.ward||"").trim().toUpperCase();
-  for(const k in WARD_ICN){ if(k.toUpperCase()===w) return WARD_ICN[k]; }
+  const w=wardKey(p.ward);
+  for(const k in WARD_ICN){ if(wardKey(k)===w) return WARD_ICN[k]; }
   return "";
 }
 
@@ -620,11 +623,19 @@ async function loginWard(){
     try{
       const r=await fetch(GAS_URL+"?action=login&user="+encodeURIComponent(u)+"&pass="+encodeURIComponent(p));
       const res=await r.json();
-      if(res.ok){ SESSION={role:"ward",uki:false,ward:res.ward,name:res.ward}; startApp(); return; }
-      err.textContent="Incorrect username or password."; return;
-    }catch(e){ err.textContent="Failed to connect to server."; return; }
+      if(res.ok){
+        let ward=res.ward;
+        if(!ward || String(ward).trim()===""){
+          const uk=u.replace(/[^a-z0-9]/g,"");
+          for(const w of DROPDOWNS.ward){ if(wardToUser(w)===uk){ ward=w; break; } }
+          if(!ward) ward=u.toUpperCase();
+        }
+        SESSION={role:"ward",uki:false,ward:ward,name:ward}; startApp(); return;
+      }
+      // server jawab tapi tolak -> mungkin tab Users belum ada; cuba creds lokal
+    }catch(e){ /* server tak dapat dihubungi -> guna creds lokal di bawah */ }
   }
-  // demo: semak WARD_CREDS
+  // demo / fallback: semak WARD_CREDS
   const rec=WARD_CREDS[u];
   if(rec && rec.pass===p){ SESSION={role:"ward",uki:false,ward:rec.ward,name:rec.ward}; startApp(); }
   else err.textContent="Incorrect username or password.";
@@ -685,7 +696,12 @@ async function loadData(){
   }else{await new Promise(r=>setTimeout(r,400));all=JSON.parse(JSON.stringify(DEMO));}
   all.forEach(p=>p._icn=inchargeFor(p));
   ALLDATA=all;
-  PATIENTS = SESSION.uki ? all : all.filter(p=>String(p.ward||"").trim().toUpperCase()===SESSION.ward.toUpperCase());
+  PATIENTS = SESSION.uki ? all : all.filter(p=>wardKey(p.ward)===wardKey(SESSION.ward));
+  // diagnostik: kalau ward login tapi 0 pesakit, tunjuk ward sebenar yg ada dlm data
+  if(!SESSION.uki && PATIENTS.length===0 && all.length>0){
+    const wards=[...new Set(all.map(p=>p.ward).filter(Boolean))].slice(0,12).join(", ");
+    setTimeout(()=>toast(`Ward "${SESSION.ward}" tiada padanan. Ward dalam data: ${wards||"(kosong)"}`),600);
+  }
   document.getElementById("loading").classList.add("hidden");
   document.getElementById("board").classList.remove("hidden");
   buildTabbar(); buildChips(); render();
@@ -800,6 +816,8 @@ function cardHTML(p){
   const od=isOverdue(p);const nf=noForm(p);const pct=pctOf(p);const ds=daysSince(p.sampleDate);
   const bl={todo:"Not started",draft:"Draft",done:"Done",pending:"To verify"}[s];
   const tags=[`<span class="tag org">${p.organism||"?"}</span>`,`<span class="tag ward">${p.ward||"?"}</span>`];
+  // tunjuk ICN incharge (bila UKI tengok semua ward) supaya nampak siapa incharge
+  if(SESSION.uki){ const icn=p._icn||inchargeFor(p); if(icn) tags.push(`<span class="tag icn">${icn}</span>`); }
   if(od)tags.push(`<span class="tag od">⏱ ${ds} days</span>`);
   if(nf&&!SESSION.uki)tags.push(`<span class="tag noform">Needs form</span>`);
   if(reviewDue(p)&&SESSION.uki)tags.push(`<span class="tag noform">Due review</span>`);
@@ -914,10 +932,25 @@ function shareLink(id){
   const miss=REQUIRED.filter(k=>!p[k]||String(p[k]).trim()==="").map(k=>{const f=ALL_FIELDS.find(x=>x.k===k);return f?f.l:k;});
   const uname=wardToUser(p.ward);
   const cred=WARD_CREDS[uname]?WARD_CREDS[uname].pass:uname+"123";
-  const msg=`*MDRO Form To Be Filled*%0A%0APatient: *${p.name}*%0AWard: ${p.ward}%0AOrganism: ${p.organism||"-"}%0ASampled: ${fmtDate(p.sampleDate)}%0A%0A`+(miss.length?`To be completed: ${miss.join(", ")}%0A%0A`:``)+`Please log in (choose *Ward / Doctor*) & fill the form:%0A${encodeURIComponent(link)}%0A%0A*Ward login:*%0AUsername: ${uname}%0APassword: ${cred}%0A%0A_UKI HTPN_`;
-  if(navigator.share){navigator.share({title:"MDRO Form",text:`MDRO form: ${p.name} (login ${uname}/${cred})`,url:link}).catch(()=>{});}
-  else window.open(`https://wa.me/?text=${msg}`,"_blank");
-  toast("Link + ward login ready to share");
+  // bina mesej (guna \n biasa, encode sekali je)
+  const text=
+    `*MDRO Form To Be Filled*\n\n`+
+    `Patient: *${p.name}*\n`+
+    `Ward: ${p.ward}\n`+
+    `Organism: ${p.organism||"-"}\n`+
+    `Sampled: ${fmtDate(p.sampleDate)}\n\n`+
+    (miss.length?`To be completed: ${miss.join(", ")}\n\n`:``)+
+    `Please log in (choose Ward / Doctor) & fill the form:\n${link}\n\n`+
+    `Ward login:\nUsername: ${uname}\nPassword: ${cred}\n\n- UKI HTPN`;
+  const waUrl=`https://wa.me/?text=${encodeURIComponent(text)}`;
+  const win=window.open(waUrl,"_blank");
+  // fallback: kalau popup disekat, salin ke clipboard
+  if(!win){
+    if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>toast("WhatsApp disekat — mesej disalin. Tampal dalam WhatsApp.")); }
+    else toast("Sila benarkan popup untuk buka WhatsApp");
+  } else {
+    toast("Membuka WhatsApp...");
+  }
 }
 function verifyCase(id){const p=PATIENTS.find(x=>x.id===id)||ALLDATA.find(x=>x.id===id);if(!p)return;p.verified=true;toast(`${p.name} — verified ✓ (tap Resolve to close case)`);closeSheet();render();}
 function resolveCase(id){const p=PATIENTS.find(x=>x.id===id)||ALLDATA.find(x=>x.id===id);if(!p)return;p.verified=true;p.formDone="YES";p.resolved=true;if(GAS_URL){fetch(GAS_URL,{method:"POST",body:JSON.stringify({action:"verify",id:p.id})}).catch(()=>{});}toast(`${p.name} — RESOLVED ✓`);closeSheet();render();}
@@ -1019,7 +1052,7 @@ function saveNewEntry(){
   if(miss.length){ toast("Please complete: "+miss.join(", ")); return; }
   p._icn=inchargeFor(p);
   ALLDATA.push(p);
-  if(SESSION.uki || String(p.ward).toUpperCase()===String(SESSION.ward||"").toUpperCase()) PATIENTS.push(p);
+  if(SESSION.uki || wardKey(p.ward)===wardKey(SESSION.ward)) PATIENTS.push(p);
   saveNewToGAS(p);
   // reset borang
   ["ne_name","ne_ic","ne_sampleDate"].forEach(id=>document.getElementById(id).value="");
