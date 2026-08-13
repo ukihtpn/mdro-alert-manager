@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 :root{
   --bg:#0d0d0d; --panel:#161616; --panel2:#1e1e1e; --line:#2b2b2b; --line2:#3a3a3a;
@@ -68,6 +69,16 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .field label{display:block;font-size:12px;font-weight:700;color:var(--mut);margin-bottom:7px;text-transform:uppercase;letter-spacing:.05em}
 .field input,.field select,.field textarea{width:100%;padding:14px 15px;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;color:var(--ink);outline:none;transition:border-color .15s,background .15s}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--red);background:var(--panel2)}
+.pwrap{position:relative}
+.pwrap input{width:100%;padding:14px 46px 14px 15px;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;color:var(--ink);outline:none;transition:border-color .15s,background .15s}
+.pwrap input:focus{border-color:var(--red);background:var(--panel2)}
+.pwrap .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;display:grid;place-items:center;color:var(--mut);border-radius:8px}
+.pwrap .eye:hover{color:var(--ink)}
+.pwrap .eye svg{width:20px;height:20px}
+.pwrap .eye.on{color:var(--red)}
+.remember{display:flex;align-items:center;gap:9px;margin-bottom:14px;cursor:pointer;user-select:none}
+.remember input{width:18px;height:18px;accent-color:var(--red);cursor:pointer}
+.remember span{font-size:13.5px;color:var(--mut);font-weight:600}
 .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;border-radius:12px;font-weight:800;font-size:15px;transition:transform .08s,filter .15s}
 .btn:active{transform:scale(.98)}
 .btn-primary{background:linear-gradient(135deg,#e23b3b,#c62828);color:#fff;box-shadow:0 6px 20px rgba(226,59,59,.35)}
@@ -234,6 +245,24 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .info-card .legend{display:flex;align-items:center;gap:9px;padding:7px 0;font-size:13px}
 .info-card .legend .sw{width:14px;height:14px;border-radius:4px;flex:0 0 auto}
 .section-title{font-family:'Archivo';font-weight:800;font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin:6px 2px 12px}
+.rp-check{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+.rp-check input{width:20px;height:20px;margin-top:4px;accent-color:var(--red);flex:0 0 auto}
+.rp-check .rp-text{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--ink);padding:8px 10px;font-size:12.5px;font-family:inherit;line-height:1.45;resize:vertical}
+.chart-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 12px 10px}
+.chart-summary{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin:8px 0 4px;font-size:12.5px;line-height:1.5;color:var(--mut)}
+.chart-summary b{color:var(--ink)}
+.chart-summary .up{color:#ff8a8a;font-weight:700}
+.chart-summary .down{color:#4fe0a5;font-weight:700}
+.kpi-alert{border-radius:var(--r);padding:13px 15px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+.kpi-alert.warn{background:var(--red-dim);border:1.5px solid var(--red)}
+.kpi-alert.hh{background:var(--yellow-dim);border:1.5px solid var(--yellow)}
+.kpi-alert .ico{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;flex:0 0 auto}
+.kpi-alert.warn .ico{background:var(--red)} .kpi-alert.hh .ico{background:var(--yellow)}
+.kpi-alert .ico svg{width:18px;height:18px}
+.kpi-alert .body{flex:1;min-width:0}
+.kpi-alert .body b{font-family:'Archivo';font-weight:800;font-size:13.5px;display:block;margin-bottom:3px}
+.kpi-alert.warn .body b{color:#ffb4b4} .kpi-alert.hh .body b{color:var(--yellow)}
+.kpi-alert .body span{font-size:12.5px;color:var(--mut);line-height:1.5}
 .lmbtn{transition:.15s;border:none;background:none;cursor:pointer}
 .lmbtn.active{background:var(--panel2);color:var(--ink)!important;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .lmbtn.active[data-lm="master"]{color:#ffd98a!important}
@@ -286,14 +315,41 @@ input,select,textarea{font-family:inherit;font-size:15px}
     </div>
     <div id="uki-login">
       <div class="field"><label>Username</label><input id="uName" type="text" autocomplete="username" placeholder="uki" spellcheck="false"></div>
-      <div class="field"><label>Password</label><input id="uPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+      <div class="field"><label>Password</label>
+        <div class="pwrap"><input id="uPass" type="password" autocomplete="current-password" placeholder="••••••••">
+          <button type="button" class="eye" onclick="togglePw('uPass',this)" aria-label="Show password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </div>
+      <label class="remember"><input type="checkbox" id="ukiRemember"><span>Remember me</span></label>
       <button class="btn btn-primary" onclick="loginUki()">UKI Login
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       <div class="err" id="ukiErr"></div>
     </div>
+
+    <div id="uki-icn" class="hidden">
+      <div class="field"><label>Select ICN in-charge</label>
+        <select id="icnPick">
+          <option value="ICN MARIAM">ICN MARIAM</option>
+          <option value="ICN MARIA">ICN MARIA</option>
+          <option value="ICN ROSENA">ICN ROSENA</option>
+          <option value="DR ANEESA">DR ANEESA</option>
+          <option value="DR SAIHAH">DR SAIHAH</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="enterDash()">Enter
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      <button class="btn btn-ghost" style="margin-top:9px" onclick="backToUkiLogin()">Back</button>
+    </div>
     <div id="ward-login" class="hidden">
       <div class="field"><label>Ward Username</label><input id="wardUser" type="text" autocomplete="username" placeholder="e.g. w3, w7, icumb" spellcheck="false"></div>
-      <div class="field"><label>Password</label><input id="wardPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+      <div class="field"><label>Password</label>
+        <div class="pwrap"><input id="wardPass" type="password" autocomplete="current-password" placeholder="••••••••">
+          <button type="button" class="eye" onclick="togglePw('wardPass',this)" aria-label="Show password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </div>
+      <label class="remember"><input type="checkbox" id="wardRemember"><span>Remember me</span></label>
       <button class="btn btn-blue" onclick="loginWard()">Open Ward Log
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       <div class="err" id="wardErr"></div>
@@ -325,7 +381,72 @@ input,select,textarea{font-family:inherit;font-size:15px}
           <div class="txt"><b id="odForm">0</b><span>MDRO form incomplete &gt; 7 days</span></div>
           <div class="go">View</div>
         </div>
-        <div id="graphSlot" style="margin-top:16px"></div>
+        <div id="graphSlot" style="margin-top:16px">
+          <div style="display:flex;align-items:center;gap:10px;margin:2px 2px 14px">
+            <span style="font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap">View</span>
+            <select id="dashView" onchange="switchDashView(this.value)" style="flex:1;padding:10px 12px;background:var(--panel);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);font-weight:700;font-size:13px;outline:none">
+              <option value="mdro">MDRO surveillance</option>
+              <option value="hh">Hand hygiene compliance</option>
+            </select>
+          </div>
+          <div id="mdroGraphs">
+          <div id="kpiAlerts"></div>
+          <div class="section-title" style="margin-top:6px">HAI infection rate per 100 admissions, by organism</div>
+          <div class="chart-card"><canvas id="chartRate" height="200"></canvas></div>
+          <div class="section-title" style="margin-top:18px">New cases by organism (Jan–Dec)</div>
+          <div class="chart-card"><canvas id="chartOrg" height="200"></canvas></div>
+          <div class="section-title" style="margin-top:18px">Monthly new cases vs admissions</div>
+          <div class="chart-card"><canvas id="chartTrend" height="200"></canvas></div>
+          <div class="section-title" style="margin-top:18px">By type of specimen (Jan–Dec)</div>
+          <div class="chart-card"><canvas id="chartSpecimen" height="200"></canvas></div>
+          <div class="section-title" style="margin-top:18px">Infection vs Colonizer (Jan–Dec)</div>
+          <div class="chart-card"><canvas id="chartInfection" height="200"></canvas></div>
+          <div class="section-title" style="margin-top:18px">By department / ward (Jan–Dec)</div>
+          <div class="chart-card"><canvas id="chartDept" height="200"></canvas></div>
+          <div class="section-title" style="margin-top:18px">HAI infection by department (Jan–Dec)</div>
+          <div class="chart-card"><canvas id="chartInfDept" height="200"></canvas></div>
+          </div>
+          <div id="hhGraphs" class="hidden">
+            <div id="hhKpiAlerts"></div>
+            <div class="section-title" style="margin-top:6px">HH compliance — overall by ward (latest month)</div>
+            <div class="chart-card"><canvas id="hhWard" height="200"></canvas></div>
+            <div class="section-title" style="margin-top:18px">HH compliance — hospital trend (Jan–Dec)</div>
+            <div class="chart-card"><canvas id="hhTrend" height="200"></canvas></div>
+            <div class="section-title" style="margin-top:18px">HH compliance — by WHO moment (hospital, Jan–Dec)</div>
+            <div class="chart-card"><canvas id="hhMoment" height="200"></canvas></div>
+            <div class="section-title" style="margin-top:18px">HH compliance — by profession (hospital, Jan–Dec)</div>
+            <div class="chart-card"><canvas id="hhProf" height="200"></canvas></div>
+          </div>
+        </div>
+        <div id="wardGraphs" class="hidden">
+          <div style="display:flex;align-items:center;gap:10px;margin:2px 2px 14px">
+            <span style="font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap">View</span>
+            <select id="wardDashView" onchange="switchWardView(this.value)" style="flex:1;padding:10px 12px;background:var(--panel);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);font-weight:700;font-size:13px;outline:none">
+              <option value="mdro">MDRO surveillance</option>
+              <option value="hh">Hand hygiene compliance</option>
+            </select>
+          </div>
+          <div id="wardMdroGraphs">
+            <div id="wardKpiAlerts"></div>
+            <div class="section-title" style="margin-top:6px">HAI infection — by organism (Jan–Dec)</div>
+            <div class="chart-card"><canvas id="wOrg" height="200"></canvas></div>
+            <div class="section-title" style="margin-top:18px">HAI infection — by specimen (Jan–Dec)</div>
+            <div class="chart-card"><canvas id="wSpec" height="200"></canvas></div>
+            <div class="section-title" style="margin-top:18px">Infection vs Colonizer (Jan–Dec)</div>
+            <div class="chart-card"><canvas id="wInfCol" height="200"></canvas></div>
+            <div class="section-title" style="margin-top:18px">Infection type — HAI vs non-HAI (Jan–Dec)</div>
+            <div class="chart-card"><canvas id="wInfType" height="200"></canvas></div>
+          </div>
+          <div id="wardHHGraphs" class="hidden">
+            <div id="wardHHKpiAlerts"></div>
+            <div class="section-title" style="margin-top:6px">Hand hygiene compliance — overall (Jan–Dec)</div>
+            <div class="chart-card"><canvas id="wHHoverall" height="200"></canvas></div>
+            <div class="section-title" style="margin-top:18px">Hand hygiene — by WHO moment (Jan–Dec)</div>
+            <div class="chart-card"><canvas id="wHHmoment" height="200"></canvas></div>
+            <div class="section-title" style="margin-top:18px">Hand hygiene — by profession (Jan–Dec)</div>
+            <div class="chart-card"><canvas id="wHHprof" height="200"></canvas></div>
+          </div>
+        </div>
       </div>
 
       <!-- TAB: LIST PATIENT -->
@@ -378,6 +499,80 @@ input,select,textarea{font-family:inherit;font-size:15px}
             <span style="color:var(--mut)">ICN in-charge (auto):</span> <b id="ne_icn" style="color:#7fc0f0">—</b></div>
           <button class="btn btn-green" onclick="saveNewEntry()">Save to MASTERLIST</button>
           <div class="hint">After saving, the patient is added to MASTERLIST &amp; sorted by ICN in-charge to complete the other columns.</div>
+        </div>
+      </div>
+
+      <!-- TAB: REPORT -->
+      <div class="tab-page" id="tab-report">
+        <div class="section-title">Reporting</div>
+        <div class="info-card">
+          <h3 style="margin-bottom:14px">1. Report type</h3>
+          <div class="ff"><label>Choose output</label>
+            <select id="rpType" onchange="onReportType()">
+              <option value="memo">Memo (Antara Jabatan)</option>
+              <option value="report">Laporan / Report</option>
+              <option value="myhub">Notify MyHub (Outbreak)</option>
+            </select>
+          </div>
+          <div id="rpMyhub" class="hidden" style="margin-top:6px">
+            <p style="color:var(--mut);font-size:13px">Notify a suspected/confirmed outbreak directly to MyHub (national outbreak reporting).</p>
+            <button class="btn btn-primary" onclick="openMyHub()">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+              Open MyHub outbreak form</button>
+          </div>
+        </div>
+
+        <div id="rpForm">
+          <div class="info-card">
+            <h3 style="margin-bottom:14px">2. Situation</h3>
+            <div class="ff"><label>Category</label>
+              <select id="rpCategory"><option value="increase">Peningkatan kes (case increase)</option><option value="outbreak">Outbreak</option></select></div>
+            <div class="ff"><label>Ward / Department involved</label>
+              <select id="rpWard"><option value="">— select —</option></select></div>
+            <div class="ff"><label>Organism involved</label>
+              <select id="rpOrg"><option value="">— select —</option></select></div>
+            <div class="ff"><label>Reference no. (enter number only)</label>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="color:var(--mut);font-size:13px;white-space:nowrap">BIL (</span>
+                <input type="text" id="rpRef" placeholder="10" style="width:70px;text-align:center" inputmode="numeric">
+                <span style="color:var(--mut);font-size:13px;white-space:nowrap">) dalam JKI/HTPN/26</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <h3 style="margin-bottom:6px">3. Audit findings</h3>
+            <p style="color:var(--mut2);font-size:12px;margin-bottom:12px">Tick findings to include. You can edit the text.</p>
+            <div id="rpFindings"></div>
+            <button class="btn btn-ghost" style="margin-top:4px" onclick="addCustom('rpFindings','Finding')">+ Add finding</button>
+          </div>
+
+          <div class="info-card">
+            <h3 style="margin-bottom:6px">4. Recommendations</h3>
+            <div id="rpRecs"></div>
+            <button class="btn btn-ghost" style="margin-top:4px" onclick="addCustom('rpRecs','Recommendation')">+ Add recommendation</button>
+          </div>
+
+          <div class="info-card">
+            <h3 style="margin-bottom:6px">5. Conclusion</h3>
+            <div id="rpConcl"></div>
+            <button class="btn btn-ghost" style="margin-top:4px" onclick="addCustom('rpConcl','Conclusion')">+ Add conclusion</button>
+          </div>
+
+          <div class="info-card">
+            <h3 style="margin-bottom:6px">6. Graphs to include</h3>
+            <p style="color:var(--mut2);font-size:12px;margin-bottom:12px">Tick charts to attach to the memo/report.</p>
+            <div id="rpGraphs"></div>
+          </div>
+
+          <div class="info-card">
+            <h3 style="margin-bottom:10px">7. Generate</h3>
+            <p style="color:var(--mut2);font-size:12px;margin-bottom:12px">Signature is left blank for Dr Zaila to verify &amp; sign.</p>
+            <button class="btn btn-primary" onclick="generateReport()">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+              Generate &amp; download (PDF)</button>
+            <div class="hint">Opens a print-ready page — choose "Save as PDF" to download or print.</div>
+          </div>
         </div>
       </div>
 
@@ -448,11 +643,38 @@ input,select,textarea{font-family:inherit;font-size:15px}
 
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzSxO5SSlGLHxOAvRRa9kSSIV6JEmmZG-58mweUAbC90WI_fO4VEnwOptsHcl3THZqYHQ/exec";
+/* URL app selepas deploy ke Vercel (cth "https://mdro-alert.vercel.app").
+   Link WhatsApp guna ini. Biar kosong kalau belum deploy. */
+const APP_URL = "";
 const UKI_CREDS = { "uki":"uki123" };
 const WARD_PASS_DEFAULT = "ward123";
 const OVERDUE_DAYS = 7;
 const REVIEW_DAYS = 3;
 const ICN_LIST = ["ICN MARIAM","ICN MARIA","ICN ROSENA","DR ANEESA","DR SAIHAH"];
+
+/* ---- DENOMINATOR: total admissions per month (dari tab Monthly Adm) ----
+   Demo values dari workbook. Bila GAS deploy, boleh diganti guna action=admissions. */
+const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+let MONTHLY_ADM = {Jan:3389,Feb:3116,Mar:3148,Apr:3389,May:3454,Jun:3379,Jul:0,Aug:0,Sep:0,Oct:0,Nov:0,Dec:0};
+
+/* ---- HAND HYGIENE COMPLIANCE ----
+   HH_DATA[ward][month] = {overall, m1,m2,m3,m4,m5, doctor,nurse,hca,others} (semua %)
+   Bila GAS deploy, diisi dari tab "HH Compliance". Demo di bawah. */
+const HH_MOMENTS=["Before patient","Before aseptic","After body fluid","After patient","After surroundings"];
+const HH_PROF=["Doctor","Nurse","HCA","Others"];
+let HH_DATA={};
+(function seedHHdemo(){
+  const wards=["W1","W2","W3","W4","W6","W7","ICU MB"];
+  const months=["Jan","Feb","Mar","Apr","May","Jun"];
+  wards.forEach(w=>{ HH_DATA[w]={}; months.forEach(m=>{
+    const base=70+Math.floor(Math.random()*22);
+    HH_DATA[w][m]={overall:base,
+      m1:base-3+Math.floor(Math.random()*8), m2:base-6+Math.floor(Math.random()*8),
+      m3:base+Math.floor(Math.random()*6), m4:base-2+Math.floor(Math.random()*7), m5:base-8+Math.floor(Math.random()*8),
+      doctor:base-10+Math.floor(Math.random()*10), nurse:base+Math.floor(Math.random()*8),
+      hca:base-5+Math.floor(Math.random()*8), others:base-12+Math.floor(Math.random()*12)};
+  });});
+})();
 
 /* ---- USERNAME WARD: tukar nama ward -> kod username kecil ----
    "W3" -> "w3" ; "ICU MB" -> "icumb" ; "6A WCC" -> "6awcc" ; "HDU/CAPD" -> "hducapd" */
@@ -607,17 +829,81 @@ function setRole(r){
   document.getElementById("uki-login").classList.toggle("hidden",r!=="uki");
   document.getElementById("ward-login").classList.toggle("hidden",r!=="ward");
 }
+/* show/hide password */
+function togglePw(id,btn){
+  const el=document.getElementById(id);
+  const show=el.type==="password";
+  el.type=show?"text":"password";
+  btn.classList.toggle("on",show);
+}
+/* remember me — simpan username & password dlm localStorage (peranti sendiri) */
+const LS_UKI="mdro_uki_creds", LS_WARD="mdro_ward_creds";
+function saveRemember(key,user,pass){
+  try{ localStorage.setItem(key, JSON.stringify({user:user,pass:pass})); }catch(e){}
+}
+function clearRemember(key){ try{ localStorage.removeItem(key); }catch(e){} }
+function loadRemember(){
+  try{
+    const u=JSON.parse(localStorage.getItem(LS_UKI)||"null");
+    if(u){ document.getElementById("uName").value=u.user||""; document.getElementById("uPass").value=u.pass||""; document.getElementById("ukiRemember").checked=true; }
+    const w=JSON.parse(localStorage.getItem(LS_WARD)||"null");
+    if(w){ document.getElementById("wardUser").value=w.user||""; document.getElementById("wardPass").value=w.pass||""; document.getElementById("wardRemember").checked=true; }
+  }catch(e){}
+}
 function loginUki(){
   const u=document.getElementById("uName").value.trim().toLowerCase();
   const p=document.getElementById("uPass").value;
-  if(UKI_CREDS[u]&&UKI_CREDS[u]===p){SESSION={role:"uki",uki:true,ward:null,name:"UKI Admin"};startApp();}
+  if(UKI_CREDS[u]&&UKI_CREDS[u]===p){
+    if(document.getElementById("ukiRemember").checked) saveRemember(LS_UKI,u,p); else clearRemember(LS_UKI);
+    // tunjuk pemilih ICN dulu
+    document.getElementById("uki-login").classList.add("hidden");
+    document.getElementById("uki-icn").classList.remove("hidden");
+    document.querySelector(".rtabs").classList.add("hidden");
+  }
   else document.getElementById("ukiErr").textContent="Incorrect username or password.";
+}
+function backToUkiLogin(){
+  document.getElementById("uki-icn").classList.add("hidden");
+  document.getElementById("uki-login").classList.remove("hidden");
+  document.querySelector(".rtabs").classList.remove("hidden");
+}
+function enterDash(){
+  const icn=document.getElementById("icnPick").value;
+  SESSION={role:"uki",uki:true,ward:null,name:"UKI Admin",icn:icn};
+  startApp();
+}
+/* tukar ICN tanpa logout penuh */
+function switchIcn(){
+  if(!SESSION.uki) return;
+  const opts=ICN_LIST;
+  const cur=SESSION.icn;
+  const i=opts.indexOf(cur);
+  // guna dialog ringkas: kitar ke ICN seterusnya? Lebih baik tunjuk pemilih.
+  showIcnSheet();
+}
+function showIcnSheet(){
+  const body=document.getElementById("shBody");
+  document.getElementById("shName").textContent="Switch ICN in-charge";
+  document.getElementById("shSub").textContent="Select which ICN's patient list to view";
+  body.innerHTML = ICN_LIST.map(icn=>
+    `<button class="btn ${icn===SESSION.icn?'btn-primary':'btn-ghost'}" style="margin-bottom:9px" onclick="pickIcn('${icn}')">${icn}</button>`
+  ).join("");
+  document.getElementById("sheetBg").classList.add("open");
+  document.getElementById("sheet").classList.add("open");
+  document.getElementById("sheet").scrollTop=0;
+}
+function pickIcn(icn){
+  SESSION.icn=icn;
+  document.getElementById("tbWho").textContent="UKI · "+icn;
+  closeSheet();
+  loadData();
 }
 async function loginWard(){
   const u=document.getElementById("wardUser").value.trim().toLowerCase();
   const p=document.getElementById("wardPass").value;
   const err=document.getElementById("wardErr");
   if(!u||!p){ err.textContent="Please enter username and password."; return; }
+  const rememberWard=()=>{ if(document.getElementById("wardRemember").checked) saveRemember(LS_WARD,u,p); else clearRemember(LS_WARD); };
   if(GAS_URL){
     // sahkan di server (tab Users) bila GAS deploy
     try{
@@ -630,14 +916,14 @@ async function loginWard(){
           for(const w of DROPDOWNS.ward){ if(wardToUser(w)===uk){ ward=w; break; } }
           if(!ward) ward=u.toUpperCase();
         }
-        SESSION={role:"ward",uki:false,ward:ward,name:ward}; startApp(); return;
+        SESSION={role:"ward",uki:false,ward:ward,name:ward}; rememberWard(); startApp(); return;
       }
       // server jawab tapi tolak -> mungkin tab Users belum ada; cuba creds lokal
     }catch(e){ /* server tak dapat dihubungi -> guna creds lokal di bawah */ }
   }
   // demo / fallback: semak WARD_CREDS
   const rec=WARD_CREDS[u];
-  if(rec && rec.pass===p){ SESSION={role:"ward",uki:false,ward:rec.ward,name:rec.ward}; startApp(); }
+  if(rec && rec.pass===p){ SESSION={role:"ward",uki:false,ward:rec.ward,name:rec.ward}; rememberWard(); startApp(); }
   else err.textContent="Incorrect username or password.";
 }
 function logout(){location.reload();}
@@ -648,6 +934,7 @@ const TABS_UKI = [
   ["dashboard","Dashboard",'<path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z"/>'],
   ["list","Patients",'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>'],
   ["new","New Entry",'<path d="M12 5v14M5 12h14"/>'],
+  ["report","Report",'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/>'],
   ["info","Info",'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>'],
   ["feedback","Feedback",'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>']
 ];
@@ -675,6 +962,7 @@ function switchTab(id){
   CUR_TAB=id;
   document.querySelectorAll(".tab-page").forEach(p=>p.classList.toggle("active",p.id==="tab-"+id));
   document.querySelectorAll(".tabbtn").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));
+  if(id==="report") initReport();
   window.scrollTo({top:0,behavior:"auto"});
 }
 
@@ -682,8 +970,14 @@ function startApp(){
   document.getElementById("login").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
   const mk=document.getElementById("tbMark");
-  if(SESSION.uki){mk.className="tb-mark uki";document.getElementById("tbWho").textContent="UKI Admin";document.getElementById("tbRole").textContent="Verify & resolve · all wards";}
-  else{mk.className="tb-mark ward";document.getElementById("tbWho").textContent="Ward "+SESSION.ward;document.getElementById("tbRole").textContent="Ward log · fill MDRO form";}
+  if(SESSION.uki){mk.className="tb-mark uki";document.getElementById("tbWho").textContent="UKI · "+(SESSION.icn||"");document.getElementById("tbRole").textContent="Verify & resolve · tap to switch ICN";
+    document.querySelector(".tb-title").style.cursor="pointer";
+    document.querySelector(".tb-title").onclick=switchIcn;
+    const wg=document.getElementById("wardGraphs"); if(wg) wg.classList.add("hidden");
+    const gs=document.getElementById("graphSlot"); if(gs) gs.style.display="";}
+  else{mk.className="tb-mark ward";document.getElementById("tbWho").textContent="Ward "+SESSION.ward;document.getElementById("tbRole").textContent="Ward log · fill MDRO form";
+    const gs=document.getElementById("graphSlot"); if(gs) gs.style.display="none";
+    const wg=document.getElementById("wardGraphs"); if(wg) wg.classList.remove("hidden");}
   loadData();
 }
 async function loadData(){
@@ -696,7 +990,19 @@ async function loadData(){
   }else{await new Promise(r=>setTimeout(r,400));all=JSON.parse(JSON.stringify(DEMO));}
   all.forEach(p=>p._icn=inchargeFor(p));
   ALLDATA=all;
-  PATIENTS = SESSION.uki ? all : all.filter(p=>wardKey(p.ward)===wardKey(SESSION.ward));
+  // ambil denominator (admissions) dari GAS kalau ada
+  if(GAS_URL){
+    try{ const ra=await fetch(GAS_URL+"?action=admissions"); const adm=await ra.json();
+      if(adm && typeof adm==="object" && !adm.error){ MONTHLY_ADM=Object.assign(MONTHLY_ADM,adm); } }catch(e){}
+    try{ const rh=await fetch(GAS_URL+"?action=hh"); const hh=await rh.json();
+      if(hh && typeof hh==="object" && !hh.error && Object.keys(hh).length){ HH_DATA=hh; } }catch(e){}
+  }
+  // Ward: pesakit ward sendiri. UKI: pesakit ICN yang dipilih (graf tetap guna ALLDATA = semua).
+  if(SESSION.uki){
+    PATIENTS = all.filter(p=>(p._icn||inchargeFor(p))===SESSION.icn);
+  } else {
+    PATIENTS = all.filter(p=>wardKey(p.ward)===wardKey(SESSION.ward));
+  }
   // diagnostik: kalau ward login tapi 0 pesakit, tunjuk ward sebenar yg ada dlm data
   if(!SESSION.uki && PATIENTS.length===0 && all.length>0){
     const wards=[...new Set(all.map(p=>p.ward).filter(Boolean))].slice(0,12).join(", ");
@@ -705,6 +1011,8 @@ async function loadData(){
   document.getElementById("loading").classList.add("hidden");
   document.getElementById("board").classList.remove("hidden");
   buildTabbar(); buildChips(); render();
+  if(SESSION.uki){ setTimeout(renderCharts, 100); }
+  else { setTimeout(renderWardCharts, 100); }
 }
 
 function counts(){
@@ -739,6 +1047,696 @@ function applyListMode(){
   document.getElementById("mdroFilterRow").classList.toggle("hidden", !showDrop);
 }
 function setMdro(v){ CUR_MDRO=v; const sel=document.getElementById("mdroFilter"); if(sel)sel.value=v; render(); }
+
+/* ================= DASHBOARD CHARTS ================= */
+let CHARTS={};
+const ORG_COLORS={
+  "MRSA":"#e23b3b","ESBL KPN":"#ff5da2","ESBL E Coli":"#f4b400","CRE":"#26c281",
+  "MRO ACB":"#4a9de8","MRO others":"#9a6ae8","VRE":"#e88a2f","ESBL others":"#6ac0c0"
+};
+/* KPI rate per 100 admissions (HAI own + Infection + NEW). null = tiada KPI (guna baseline). */
+const ORG_KPI={
+  "MRSA":0.3, "MRO ACB":0.3, "ESBL KPN":0.3,
+  "ESBL E Coli":0.2,
+  "CRE":0.1, "VRE":0.1,
+  "MRO others":null, "ESBL others":null
+};
+const HH_KPI=85;
+function monthOf(iso){ const d=new Date(iso); if(isNaN(d))return null; return MONTH_LABELS[d.getMonth()]; }
+function isNewCase(p){ return String(p.caseStatus||"").toUpperCase()==="NEW" || !p.caseStatus; }
+/* kes utk RATE: HAI own hospital + Infection + NEW (tiga syarat) */
+function isHaiInfectionNew(p){
+  if(!isNewCase(p)) return false;
+  const hai=String(p.hai||"").toUpperCase();
+  const inf=String(p.infCol||"").toUpperCase();
+  return hai.indexOf("OWN")>-1 && inf==="INFECTION";
+}
+
+/* ===== ANALISIS & KPI ===== */
+// rate per organism per month untuk set pesakit (HAI own+infection+new), pulang {org:{month:rate}}
+function ratePerOrgMonth(patients){
+  const cnt={}; // org -> {month:count}
+  patients.forEach(p=>{ if(!isHaiInfectionNew(p))return; const m=monthOf(p.sampleDate); if(!m)return;
+    const o=p.organism||"Other"; cnt[o]=cnt[o]||{}; cnt[o][m]=(cnt[o][m]||0)+1; });
+  const rate={};
+  for(const o in cnt){ rate[o]={}; for(const m in cnt[o]){ const adm=MONTHLY_ADM[m]||0; rate[o][m]=adm>0?+(cnt[o][m]/adm*100).toFixed(3):0; } }
+  return {cnt,rate};
+}
+function latestTwoMonths(){
+  const ms=activeMonths();
+  return {last:ms[ms.length-1], prev:ms[ms.length-2]||null, months:ms};
+}
+// kesan pelanggaran KPI + peningkatan tren; pulang array {org, ward, rate, kpi, count, prevCount, type, rising}
+function detectMdroAlerts(patients, wardMode){
+  const {last,prev}=latestTwoMonths(); if(!last) return [];
+  const admLast=MONTHLY_ADM[last]||0;
+  // kira kes HAI-infection-new ikut (ward,org) utk bulan terkini & sebelum
+  const cntLast={}, cntPrev={};
+  patients.forEach(p=>{ if(!isHaiInfectionNew(p))return; const m=monthOf(p.sampleDate); if(!m)return;
+    const w=wardMode?"_":(p.ward||"?"); const o=p.organism||"Other"; const key=w+"||"+o;
+    if(m===last) cntLast[key]=(cntLast[key]||0)+1;
+    else if(prev&&m===prev) cntPrev[key]=(cntPrev[key]||0)+1;
+  });
+  const alerts=[];
+  Object.keys(cntLast).forEach(key=>{
+    const [w,o]=key.split("||"); const cur=cntLast[key]||0; const before=cntPrev[key]||0;
+    const rate=admLast>0?+(cur/admLast*100).toFixed(3):0;
+    const kpi=ORG_KPI[o];
+    const exceeds = (kpi!=null && rate>kpi);
+    const rising = (cur>before);
+    if(exceeds || rising || kpi==null){
+      alerts.push({org:o, ward:w, rate, kpi, count:cur, prevCount:before,
+        exceeds, rising, noKpi:(kpi==null)});
+    }
+  });
+  // susun: exceeds KPI dulu, kemudian rising
+  alerts.sort((a,b)=> (b.exceeds?1:0)-(a.exceeds?1:0) || b.rate-a.rate);
+  return alerts;
+}
+// analisis tren ringkas utk siri nilai (naik/turun/stabil)
+function trendText(vals){
+  const v=vals.filter(x=>x!=null&&!isNaN(x));
+  if(v.length<2) return "";
+  const last=v[v.length-1], prev=v[v.length-2];
+  const diff=last-prev;
+  if(Math.abs(diff)<0.001) return "stable vs previous month";
+  return diff>0?`up ${(+diff.toFixed(2))} vs previous month`:`down ${(+Math.abs(diff).toFixed(2))} vs previous month`;
+}
+// papar ringkasan bawah graf
+function setSummary(id,text){
+  let el=document.getElementById(id);
+  if(!el){ // cipta div ringkasan selepas chart-card
+    const canvas=document.getElementById(id.replace("_sum",""));
+    if(!canvas)return; const card=canvas.closest(".chart-card"); if(!card)return;
+    el=document.createElement("div"); el.id=id; el.className="chart-summary";
+    card.insertAdjacentElement("afterend",el);
+  }
+  el.innerHTML=text;
+}
+const WARN_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>';
+// MDRO KPI alert cards — SATU card, senarai semua
+function renderMdroKpiAlerts(containerId, patients, wardMode){
+  const el=document.getElementById(containerId); if(!el)return;
+  const alerts=detectMdroAlerts(patients,wardMode);
+  const {last}=latestTwoMonths();
+  if(!alerts.length){ el.innerHTML=""; return; }
+  const lines=alerts.map(a=>{
+    const where = wardMode ? "" : ` (${a.ward})`;
+    let tags=[];
+    if(a.exceeds) tags.push("exceeds KPI");
+    if(a.rising) tags.push(`rising ${a.prevCount}→${a.count}`);
+    if(!tags.length && a.noKpi) tags.push("new cases");
+    return `<b>${a.org}</b>${where}: ${tags.join(", ")} — ${a.rate}/100 adm`;
+  });
+  el.innerHTML=`<div class="kpi-alert warn"><div class="ico">${WARN_SVG}</div><div class="body">
+    <b>MDRO alert — ${alerts.length} finding(s) (${last})</b>
+    <span>${lines.join("<br>")}<br><br>HAI infection (own hospital, new). Investigate &amp; institute control measures.</span></div></div>`;
+}
+// HH KPI alert cards (bawah 85%)
+function renderHHKpiAlerts(containerId, wardName){
+  const el=document.getElementById(containerId); if(!el)return;
+  const allMonths=MONTH_LABELS.filter(m=>{for(const w in HH_DATA){if(HH_DATA[w][m])return true;}return false;});
+  const last=allMonths[allMonths.length-1]; if(!last){ el.innerHTML=""; return; }
+  if(wardName){
+    // WARD: satu card, senarai metrik yg bawah KPI
+    let wd=null; for(const k in HH_DATA){ if(wardKey(k)===wardKey(wardName)){ wd=HH_DATA[k]; break; } }
+    if(!wd||!wd[last]){ el.innerHTML=""; return; }
+    const d=wd[last]; const low=[];
+    if(d.overall!=null&&d.overall<HH_KPI) low.push(`Overall ${d.overall}%`);
+    HH_MOMENTS.forEach((mm,i)=>{ const v=d["m"+(i+1)]; if(v!=null&&v<HH_KPI) low.push(`${mm} ${v}%`); });
+    [["Doctor",d.doctor],["Nurse",d.nurse],["HCA",d.hca],["Others",d.others]].forEach(([n,v])=>{ if(v!=null&&v<HH_KPI) low.push(`${n} ${v}%`); });
+    if(!low.length){ el.innerHTML=""; return; }
+    el.innerHTML=`<div class="kpi-alert hh"><div class="ico">${WARN_SVG}</div><div class="body">
+      <b>Ward ${wardName}: hand hygiene below KPI (${last})</b>
+      <span>Below KKM KPI ${HH_KPI}%: ${low.join(", ")}. Reinforce hand hygiene compliance.</span></div></div>`;
+  } else {
+    // UKI: SATU card, senarai ward yg overall < 85
+    const belowWards=[];
+    for(const w in HH_DATA){ const d=HH_DATA[w][last]; if(d&&d.overall!=null&&d.overall<HH_KPI) belowWards.push(`${w} (${d.overall}%)`); }
+    if(!belowWards.length){ el.innerHTML=""; return; }
+    el.innerHTML=`<div class="kpi-alert hh"><div class="ico">${WARN_SVG}</div><div class="body">
+      <b>Hand hygiene below KPI — ${belowWards.length} ward(s) (${last})</b>
+      <span>Below KKM KPI ${HH_KPI}%: ${belowWards.join(", ")}. Follow up with the wards.</span></div></div>`;
+  }
+}
+
+
+function computeMonthly(){
+  // numerator: NEW cases per month (guna semua pesakit yg UKI nampak)
+  const src = ALLDATA.length?ALLDATA:PATIENTS;
+  const byMonth={}; MONTH_LABELS.forEach(m=>byMonth[m]=0);
+  const byMonthOrg={}; // {month:{org:count}}
+  const orgTotal={};
+  src.forEach(p=>{
+    if(!isNewCase(p)) return;
+    const m=monthOf(p.sampleDate); if(!m) return;
+    byMonth[m]++;
+    const o=p.organism||"Other";
+    byMonthOrg[m]=byMonthOrg[m]||{}; byMonthOrg[m][o]=(byMonthOrg[m][o]||0)+1;
+    orgTotal[o]=(orgTotal[o]||0)+1;
+  });
+  return {byMonth,byMonthOrg,orgTotal};
+}
+function activeMonths(){
+  const {byMonth}=computeMonthly();
+  const ms=MONTH_LABELS.filter(m=>(MONTHLY_ADM[m]>0)||(byMonth[m]>0));
+  return ms.length?ms:MONTH_LABELS.slice(0,6);
+}
+function renderCharts(){
+  if(typeof Chart==="undefined"){
+    ["chartRate","chartOrg","chartTrend","chartSpecimen","chartInfection","chartDept","chartInfDept"].forEach(id=>{
+      const el=document.getElementById(id); if(el&&el.parentElement){ el.parentElement.innerHTML='<div style="padding:24px;text-align:center;color:var(--mut2);font-size:13px">Graf memerlukan sambungan internet (Chart.js). Sila pastikan talian aktif.</div>'; }
+    });
+    return;
+  }
+  const {byMonth,orgTotal}=computeMonthly();
+  const months=activeMonths(); if(months.length===0) months.push(...MONTH_LABELS.slice(0,6));
+  const gridColor="rgba(255,255,255,.06)", tickColor="#9a9a9a";
+  Chart.defaults.color=tickColor; Chart.defaults.font.family="Inter";
+
+  // 1) Rate per 100 admissions — SATU garisan setiap organisma
+  //    numerator = HAI own hospital + Infection + NEW (ikut organisma) ; denominator = admission bulanan
+  const rateByOrg={}; // org -> {month:count}
+  const src=ALLDATA.length?ALLDATA:PATIENTS;
+  src.forEach(p=>{
+    if(!isHaiInfectionNew(p)) return;
+    const m=monthOf(p.sampleDate); if(!m) return;
+    const o=p.organism||"Other";
+    rateByOrg[o]=rateByOrg[o]||{}; rateByOrg[o][m]=(rateByOrg[o][m]||0)+1;
+  });
+  const rateOrgs=Object.keys(rateByOrg).sort();
+  const rateDatasets=rateOrgs.map(o=>({
+    label:o,
+    data:months.map(m=>{ const adm=MONTHLY_ADM[m]||0; const num=(rateByOrg[o][m]||0); return adm>0?+((num/adm*100).toFixed(3)):0; }),
+    borderColor:ORG_COLORS[o]||"#6a6a6a", backgroundColor:ORG_COLORS[o]||"#6a6a6a",
+    tension:.3, pointRadius:3, fill:false
+  }));
+  // kalau tiada data langsung, tunjuk garisan kosong supaya paksi masih ada
+  drawChart("chartRate","line",{
+    labels:months,
+    datasets:rateDatasets.length?rateDatasets:[{label:"Rate / 100 adm",data:months.map(()=>0),borderColor:"#26c281"}]
+  },{scales:{y:{beginAtZero:true,grid:{color:gridColor},title:{display:true,text:"Rate / 100 adm"}},x:{grid:{color:gridColor}}},plugins:{legend:{display:true,labels:{boxWidth:11,font:{size:10}}}}});
+  // alert KPI + ringkasan rate
+  renderMdroKpiAlerts("kpiAlerts", ALLDATA.length?ALLDATA:PATIENTS, false);
+  { const {last,prev}=latestTwoMonths(); let lines=[];
+    rateOrgs.forEach(o=>{ const lv=rateByOrg[o][last]?+((rateByOrg[o][last]/(MONTHLY_ADM[last]||1)*100).toFixed(2)):0;
+      const kpi=ORG_KPI[o]; const st=(kpi!=null&&lv>kpi)?`<span class="up">above KPI</span>`:(kpi!=null?`within KPI`:`no KPI`);
+      lines.push(`${o}: ${lv}/100 (${st})`); });
+    setSummary("chartRate_sum", `<b>Analysis:</b> HAI infection rate (own hospital, infection, new) per organism in <b>${last||"-"}</b>. `+(lines.length?lines.join("; ")+".":"No HAI infection cases recorded.")); }
+
+  // 2) New cases by organism — stacked by month (Jan-Dec)
+  const so=stackedDatasets("organism",k=>ORG_COLORS[k]||"#6a6a6a");
+  drawChart("chartOrg","bar",{labels:so.months,datasets:so.datasets},
+    {scales:{x:{stacked:true,grid:{color:gridColor}},y:{stacked:true,beginAtZero:true,grid:{color:gridColor}}},plugins:{legend:{display:true,labels:{boxWidth:11,font:{size:10}}}}});
+
+  // 3) New cases vs admissions (bar + line combo)
+  drawChart("chartTrend","bar",{
+    labels:months,
+    datasets:[
+      {type:"bar",label:"New cases",data:months.map(m=>byMonth[m]||0),backgroundColor:"rgba(255,93,162,.7)",borderRadius:6,yAxisID:"y"},
+      {type:"line",label:"Admissions",data:months.map(m=>MONTHLY_ADM[m]||0),borderColor:"#4a9de8",backgroundColor:"#4a9de8",tension:.3,pointRadius:3,yAxisID:"y1"}
+    ]
+  },{scales:{y:{beginAtZero:true,position:"left",grid:{color:gridColor},title:{display:true,text:"New cases"}},y1:{beginAtZero:true,position:"right",grid:{display:false},title:{display:true,text:"Admissions"}},x:{grid:{color:gridColor}}},plugins:{legend:{display:true,labels:{boxWidth:12}}}});
+
+  // 4) By type of specimen — stacked by month
+  const specColors=["#4a9de8","#26c281","#f4b400","#ff5da2","#9a6ae8","#e88a2f","#6ac0c0","#e23b3b","#8fce5a","#c94fd6"];
+  const ss4=stackedDatasets("specimen",(k)=>{const {order}=countByMonth("specimen");return specColors[order.indexOf(k)%specColors.length];});
+  drawChart("chartSpecimen","bar",{labels:ss4.months,datasets:ss4.datasets},
+    {scales:{x:{stacked:true,grid:{color:gridColor}},y:{stacked:true,beginAtZero:true,grid:{color:gridColor}}},plugins:{legend:{display:true,labels:{boxWidth:11,font:{size:10}}}}});
+
+  // 5) By type of infection (Infection vs Colonizer) — stacked by month
+  const si=stackedDatasets("infCol",k=>k.toUpperCase()==="INFECTION"?"#e23b3b":(k.toUpperCase()==="COLONIZER"?"#f4b400":"#6a6a6a"));
+  drawChart("chartInfection","bar",{labels:si.months,datasets:si.datasets},
+    {scales:{x:{stacked:true,grid:{color:gridColor}},y:{stacked:true,beginAtZero:true,grid:{color:gridColor}}},plugins:{legend:{position:"bottom",labels:{boxWidth:12,padding:12}}}});
+
+  // 6) By department / ward — stacked by month (top wards)
+  const wardColors=["#ff5da2","#4a9de8","#26c281","#f4b400","#9a6ae8","#e88a2f","#6ac0c0","#e23b3b","#8fce5a","#c94fd6","#5a9ce8","#d64f9a"];
+  const sd=stackedDatasets("ward",(k)=>{const {order}=countByMonth("ward");return wardColors[order.indexOf(k)%wardColors.length];},12);
+  drawChart("chartDept","bar",{labels:sd.months,datasets:sd.datasets},
+    {scales:{x:{stacked:true,grid:{color:gridColor}},y:{stacked:true,beginAtZero:true,grid:{color:gridColor}}},plugins:{legend:{display:true,labels:{boxWidth:11,font:{size:10}}}}});
+
+  // 7) HAI infection by department — HAI own + Infection, stacked by month
+  const infDeptData={}; const infDeptCats={};
+  src.forEach(p=>{
+    const hai=String(p.hai||"").toUpperCase(), inf=String(p.infCol||"").toUpperCase();
+    if(!(isNewCase(p) && hai.indexOf("OWN")>-1 && inf==="INFECTION")) return;
+    const m=monthOf(p.sampleDate); if(!m) return;
+    const w=(p.ward||"(blank)").toString().trim();
+    infDeptCats[w]=(infDeptCats[w]||0)+1;
+    infDeptData[w]=infDeptData[w]||{}; infDeptData[w][m]=(infDeptData[w][m]||0)+1;
+  });
+  const idOrder=Object.keys(infDeptCats).sort((a,b)=>infDeptCats[b]-infDeptCats[a]).slice(0,12);
+  const idDatasets=idOrder.map(w=>({
+    label:w, data:months.map(m=>(infDeptData[w]&&infDeptData[w][m])||0),
+    backgroundColor:wardColors[idOrder.indexOf(w)%wardColors.length], borderRadius:4, stack:"s"
+  }));
+  drawChart("chartInfDept","bar",{
+    labels:months, datasets:idDatasets.length?idDatasets:[{label:"(no data)",data:months.map(()=>0),backgroundColor:"#6a6a6a"}]
+  },{scales:{x:{stacked:true,grid:{color:gridColor}},y:{stacked:true,beginAtZero:true,grid:{color:gridColor},title:{display:true,text:"HAI infections"}}},plugins:{legend:{display:true,labels:{boxWidth:11,font:{size:10}}}}});
+
+  // ===== RINGKASAN ANALISIS setiap graf (UKI MDRO) =====
+  const {last}=latestTwoMonths();
+  summariseField("chartOrg_sum","organism","New MDRO cases by organism",last);
+  { const tv=months.map(m=>byMonth[m]||0); const adm=months.map(m=>MONTHLY_ADM[m]||0);
+    setSummary("chartTrend_sum",`<b>Analysis:</b> ${byMonth[last]||0} new case(s) vs ${MONTHLY_ADM[last]||0} admissions in <b>${last}</b>. New cases ${classTrend(tv)}.`); }
+  summariseField("chartSpecimen_sum","specimen","Specimen distribution",last);
+  { const inf=countByMonth("infCol").data; const iC=(inf["INFECTION"]&&inf["INFECTION"][last])||0; const cC=(inf["COLONIZER"]&&inf["COLONIZER"][last])||0;
+    setSummary("chartInfection_sum",`<b>Analysis:</b> In <b>${last}</b>: ${iC} infection vs ${cC} colonizer (new cases). ${iC>cC?"Infections predominate.":(cC>iC?"Colonizers predominate.":"Balanced.")}`); }
+  summariseField("chartDept_sum","ward","New cases by ward",last);
+  { // HAI infection by dept summary
+    let top="",topN=0; for(const w in infDeptCats){ if((infDeptData[w]&&infDeptData[w][last]||0)>topN){topN=infDeptData[w][last];top=w;} }
+    setSummary("chartInfDept_sum",`<b>Analysis:</b> HAI infections (own hospital, new) by ward in <b>${last}</b>. `+(top?`Highest: <b>${top}</b> (${topN} case(s)). Focus IPC rounds there.`:"No HAI infection cases this month.")); }
+}
+/* ringkasan generik: kategori teratas bulan terkini + jumlah */
+function summariseField(sumId,field,label,last){
+  const {order,data}=countByMonth(field);
+  if(!order.length){ setSummary(sumId,`<b>Analysis:</b> ${label}: no new cases recorded.`); return; }
+  const thisMonth=order.map(o=>[o,(data[o]&&data[o][last])||0]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+  const total=thisMonth.reduce((s,x)=>s+x[1],0);
+  if(!total){ setSummary(sumId,`<b>Analysis:</b> ${label}: no new cases in <b>${last}</b>.`); return; }
+  const top=thisMonth[0];
+  setSummary(sumId,`<b>Analysis:</b> ${label} — ${total} new case(s) in <b>${last}</b>. Most: <b>${top[0]}</b> (${top[1]}).`);
+}
+/* klasifikasi tren siri nombor */
+function classTrend(vals){
+  const v=vals.filter(x=>x!=null&&!isNaN(x)); if(v.length<2)return "—";
+  const d=v[v.length-1]-v[v.length-2];
+  if(d>0) return `<span class="up">rose ${d}</span> vs previous month`;
+  if(d<0) return `<span class="down">fell ${Math.abs(d)}</span> vs previous month`;
+  return "were stable vs previous month";
+}
+/* kira NEW cases ikut sebarang field */
+function countBy(field){
+  const src=ALLDATA.length?ALLDATA:PATIENTS;
+  const out={};
+  src.forEach(p=>{ if(!isNewCase(p))return; const v=(p[field]||"").toString().trim()||"(blank)"; out[v]=(out[v]||0)+1; });
+  return out;
+}
+/* kira NEW cases ikut field, dipecahkan mengikut bulan -> {category:{month:count}} + senarai kategori */
+function countByMonth(field){
+  const src=ALLDATA.length?ALLDATA:PATIENTS;
+  const cats={}; // category -> total (untuk urutan)
+  const data={}; // category -> {month:count}
+  src.forEach(p=>{
+    if(!isNewCase(p))return;
+    const m=monthOf(p.sampleDate); if(!m)return;
+    const v=(p[field]||"").toString().trim()||"(blank)";
+    cats[v]=(cats[v]||0)+1;
+    data[v]=data[v]||{}; data[v][m]=(data[v][m]||0)+1;
+  });
+  const order=Object.keys(cats).sort((a,b)=>cats[b]-cats[a]);
+  return {order,data};
+}
+/* bina datasets stacked bar utk stiap kategori merentas bulan */
+function stackedDatasets(field,colorFn,limit){
+  const {order,data}=countByMonth(field);
+  const months=activeMonths();
+  const keys=limit?order.slice(0,limit):order;
+  return {months, datasets:keys.map(k=>({
+    label:k, data:months.map(m=>(data[k]&&data[k][m])||0),
+    backgroundColor:colorFn(k), borderRadius:4, stack:"s"
+  }))};
+}
+function drawChart(id,type,data,opts){
+  const el=document.getElementById(id); if(!el) return;
+  if(CHARTS[id]) CHARTS[id].destroy();
+  CHARTS[id]=new Chart(el.getContext("2d"),{type,data,options:Object.assign({responsive:true,maintainAspectRatio:true},opts)});
+}
+
+/* ===== WARD CHARTS: HAI own + Infection + NEW, untuk ward ini sahaja (guna PATIENTS) ===== */
+function renderWardCharts(){ renderWardMdroOnly(); }
+function renderWardMdroOnly(){
+  if(typeof Chart==="undefined"){
+    ["wOrg","wSpec","wInfCol","wInfType"].forEach(id=>{const el=document.getElementById(id);if(el&&el.parentElement)el.parentElement.innerHTML='<div style="padding:24px;text-align:center;color:var(--mut2);font-size:13px">Graf perlu internet (Chart.js).</div>';});
+    return;
+  }
+  const gridColor="rgba(255,255,255,.06)";
+  Chart.defaults.color="#9a9a9a"; Chart.defaults.font.family="Inter";
+  const months=activeMonths();
+  const src=PATIENTS; // ward ini sahaja
+
+  // stacked-by-month utk field tertentu, hanya kes yg lulus 'pass(p)'
+  function stackByMonthWhere(field, pass, colorFn, limit){
+    const cats={}, data={};
+    src.forEach(p=>{
+      if(!pass(p)) return;
+      const m=monthOf(p.sampleDate); if(!m) return;
+      const v=(p[field]||"(blank)").toString().trim()||"(blank)";
+      cats[v]=(cats[v]||0)+1; data[v]=data[v]||{}; data[v][m]=(data[v][m]||0)+1;
+    });
+    let order=Object.keys(cats).sort((a,b)=>cats[b]-cats[a]); if(limit)order=order.slice(0,limit);
+    return order.map(k=>({label:k,data:months.map(m=>(data[k]&&data[k][m])||0),backgroundColor:colorFn(k,order),borderRadius:4,stack:"s"}));
+  }
+  const haiInf=(p)=>{const h=String(p.hai||"").toUpperCase(),i=String(p.infCol||"").toUpperCase();return isNewCase(p)&&h.indexOf("OWN")>-1&&i==="INFECTION";};
+  const palette=["#e23b3b","#ff5da2","#f4b400","#26c281","#4a9de8","#9a6ae8","#e88a2f","#6ac0c0"];
+  const stackOpts={scales:{x:{stacked:true,grid:{color:gridColor}},y:{stacked:true,beginAtZero:true,grid:{color:gridColor}}},plugins:{legend:{display:true,labels:{boxWidth:11,font:{size:10}}}}};
+
+  // 1) HAI infection by organism
+  drawChart("wOrg","bar",{labels:months,datasets:stackByMonthWhere("organism",haiInf,(k)=>ORG_COLORS[k]||"#6a6a6a")},stackOpts);
+  // 2) HAI infection by specimen
+  drawChart("wSpec","bar",{labels:months,datasets:stackByMonthWhere("specimen",haiInf,(k,o)=>palette[o.indexOf(k)%palette.length])},stackOpts);
+  // 3) Infection vs Colonizer (NEW cases ward ini) — bukan hanya HAI
+  drawChart("wInfCol","bar",{labels:months,datasets:stackByMonthWhere("infCol",p=>isNewCase(p),(k)=>k.toUpperCase()==="INFECTION"?"#e23b3b":(k.toUpperCase()==="COLONIZER"?"#f4b400":"#6a6a6a"))},
+    {scales:{x:{stacked:true,grid:{color:gridColor}},y:{stacked:true,beginAtZero:true,grid:{color:gridColor}}},plugins:{legend:{position:"bottom",labels:{boxWidth:12,padding:12}}}});
+  // 4) Infection type: HAI vs non-HAI (NEW infection cases)
+  const infOnly=(p)=>isNewCase(p)&&String(p.infCol||"").toUpperCase()==="INFECTION";
+  drawChart("wInfType","bar",{labels:months,datasets:stackByMonthWhere("hai",infOnly,(k)=>String(k).toUpperCase().indexOf("OWN")>-1?"#e23b3b":"#4a9de8")},stackOpts);
+  // alert KPI (ward mode) + ringkasan
+  renderMdroKpiAlerts("wardKpiAlerts", PATIENTS, true);
+  { const {last}=latestTwoMonths(); const {cnt}=ratePerOrgMonth(PATIENTS);
+    const orgsHere=Object.keys(cnt); let parts=[];
+    orgsHere.forEach(o=>{ const c=cnt[o][last]||0; if(c>0) parts.push(`${o}: ${c} case(s)`); });
+    setSummary("wOrg_sum",`<b>Analysis:</b> HAI infection (own hospital, new) in <b>${SESSION.ward}</b>, ${last||"-"}. `+(parts.length?parts.join("; ")+".":"No HAI infection cases this month.")); }
+  // ringkasan graf ward lain
+  { const {last}=latestTwoMonths();
+    const specCount={}; PATIENTS.forEach(p=>{ if(!isHaiInfectionNew(p))return; if(monthOf(p.sampleDate)!==last)return; const v=p.specimen||"(blank)"; specCount[v]=(specCount[v]||0)+1; });
+    const specTop=Object.entries(specCount).sort((a,b)=>b[1]-a[1])[0];
+    setSummary("wSpec_sum",`<b>Analysis:</b> HAI infection by specimen in <b>${last||"-"}</b>. `+(specTop?`Most: <b>${specTop[0]}</b> (${specTop[1]}).`:"No cases this month."));
+    let infC=0,colC=0; PATIENTS.forEach(p=>{ if(!isNewCase(p))return; if(monthOf(p.sampleDate)!==last)return; const v=String(p.infCol||"").toUpperCase(); if(v==="INFECTION")infC++; else if(v==="COLONIZER")colC++; });
+    setSummary("wInfCol_sum",`<b>Analysis:</b> ${last||"-"}: ${infC} infection vs ${colC} colonizer (new). ${infC>colC?"Infections predominate.":(colC>infC?"Colonizers predominate.":"Balanced.")}`);
+    let hai=0,nonhai=0; PATIENTS.forEach(p=>{ if(!isNewCase(p)||String(p.infCol||"").toUpperCase()!=="INFECTION")return; if(monthOf(p.sampleDate)!==last)return; if(String(p.hai||"").toUpperCase().indexOf("OWN")>-1)hai++; else nonhai++; });
+    setSummary("wInfType_sum",`<b>Analysis:</b> ${last||"-"} infections: ${hai} HAI (own hospital) vs ${nonhai} non-HAI. ${hai>0?"Monitor HAI cases closely.":""}`); }
+}
+function hhMonths(wardData){ return MONTH_LABELS.filter(m=>wardData&&wardData[m]); }
+function renderWardHH(){
+  if(typeof Chart==="undefined") return;
+  const gridColor="rgba(255,255,255,.06)";
+  const w=SESSION.ward;
+  // padan ward (wardKey) dgn HH_DATA
+  let wd=null; for(const k in HH_DATA){ if(wardKey(k)===wardKey(w)){ wd=HH_DATA[k]; break; } }
+  const months=wd?hhMonths(wd):[];
+  const lineOpts={scales:{y:{beginAtZero:true,max:100,grid:{color:gridColor},title:{display:true,text:"% compliance"}},x:{grid:{color:gridColor}}}};
+  if(!wd || months.length===0){
+    ["wHHoverall","wHHmoment","wHHprof"].forEach(id=>{const el=document.getElementById(id);if(el&&el.parentElement)el.parentElement.innerHTML='<div style="padding:22px;text-align:center;color:var(--mut2);font-size:13px">Tiada data hand hygiene untuk ward ini lagi.</div>';});
+    const a=document.getElementById("wardHHKpiAlerts"); if(a)a.innerHTML="";
+    return;
+  }
+  renderHHKpiAlerts("wardHHKpiAlerts", w);
+  { const last=months[months.length-1]; const d=wd[last];
+    setSummary("wHHoverall_sum",`<b>Analysis:</b> Ward ${w} HH overall <b>${d.overall}%</b> in ${last} — ${d.overall>=HH_KPI?'<span class="down">meets</span>':'<span class="up">below</span>'} KKM KPI ${HH_KPI}%. ${trendText(months.map(m=>wd[m].overall))}.`);
+    const moms=[["m1",HH_MOMENTS[0]],["m2",HH_MOMENTS[1]],["m3",HH_MOMENTS[2]],["m4",HH_MOMENTS[3]],["m5",HH_MOMENTS[4]]];
+    const lowMom=moms.filter(([k])=>d[k]!=null&&d[k]<HH_KPI).map(([k,n])=>`${n} (${d[k]}%)`);
+    setSummary("wHHmoment_sum",`<b>Analysis:</b> WHO moments in ${last}. `+(lowMom.length?`Below KPI: <span class="up">${lowMom.join(", ")}</span>.`:`All moments meet KPI ${HH_KPI}%.`));
+    const profs=[["doctor","Doctor"],["nurse","Nurse"],["hca","HCA"],["others","Others"]];
+    const lowProf=profs.filter(([k])=>d[k]!=null&&d[k]<HH_KPI).map(([k,n])=>`${n} (${d[k]}%)`);
+    setSummary("wHHprof_sum",`<b>Analysis:</b> By profession in ${last}. `+(lowProf.length?`Below KPI: <span class="up">${lowProf.join(", ")}</span>.`:`All professions meet KPI ${HH_KPI}%.`)); }
+  // overall
+  drawChart("wHHoverall","line",{labels:months,datasets:[{label:"Overall %",data:months.map(m=>wd[m].overall),borderColor:"#26c281",backgroundColor:"rgba(38,194,129,.15)",fill:true,tension:.3,pointRadius:4}]},
+    Object.assign({plugins:{legend:{display:false}}},lineOpts));
+  // by moment
+  const momKeys=["m1","m2","m3","m4","m5"]; const momColors=["#e23b3b","#ff5da2","#f4b400","#26c281","#4a9de8"];
+  drawChart("wHHmoment","line",{labels:months,datasets:momKeys.map((mk,i)=>({label:HH_MOMENTS[i],data:months.map(m=>wd[m][mk]),borderColor:momColors[i],backgroundColor:momColors[i],tension:.3,pointRadius:3,fill:false}))},
+    Object.assign({plugins:{legend:{display:true,labels:{boxWidth:11,font:{size:10}}}}},lineOpts));
+  // by profession
+  const profKeys=["doctor","nurse","hca","others"]; const profColors=["#e23b3b","#4a9de8","#26c281","#f4b400"];
+  drawChart("wHHprof","line",{labels:months,datasets:profKeys.map((pk,i)=>({label:HH_PROF[i],data:months.map(m=>wd[m][pk]),borderColor:profColors[i],backgroundColor:profColors[i],tension:.3,pointRadius:3,fill:false}))},
+    Object.assign({plugins:{legend:{display:true,labels:{boxWidth:11,font:{size:10}}}}},lineOpts));
+}
+
+/* ===== REPORT / MEMO ===== */
+const MYHUB_URL="https://forms.gle/UDMiMki9sCDR4yHK6";
+const JATA_IMG="data:image/png;base64,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";
+const RP_FINDINGS=[
+  "Hand Hygiene compliance below HTPN standard (<75%)",
+  "Environmental cleaning by Radicare — not thorough / below standard",
+  "Environmental & equipment cleaning by staff — below standard; shared equipment not disinfected",
+  "Non-compliance to MDRO prevention protocol (tagging, PPE box, alcohol handrub)",
+  "Non-compliance during aseptic technique (ETT/tracheal suctioning, single-use reuse)",
+  "Suboptimal bed spacing — high cross-transmission risk"
+];
+const RP_RECS=[
+  "Strengthen Hand Hygiene compliance among all HCW",
+  "Ensure infection control compliance during aseptic & nursing care procedures",
+  "Use round trolley during ward rounds to avoid BHT/file contamination",
+  "Ensure optimal bed spacing (~1.5m; wider for critical patients)",
+  "Ward Manager & Link Nurse to monitor Radicare cleaning; report via ASIS if unsatisfactory",
+  "Ensure shared equipment cleaned on schedule with assigned staff"
+];
+const RP_CONCL=[
+  "Infection prevention is a shared responsibility of all healthcare workers; consistent IPC SOP implementation is essential",
+  "With full cooperation, this case increase can be controlled promptly for patient & staff safety"
+];
+const RP_GRAPH_OPTIONS=[
+  ["rate","HAI infection rate per 100 adm (by organism)"],
+  ["org","New cases by organism"],
+  ["dept","New cases by department/ward"],
+  ["infdept","HAI infection by department"],
+  ["hhward","HH compliance by ward"],
+  ["hhtrend","HH hospital trend"],
+  ["hhmoment","HH by WHO moment"],
+  ["hhprof","HH by profession"]
+];
+function initReport(){
+  const wsel=document.getElementById("rpWard");
+  if(wsel && wsel.options.length<=1){ DROPDOWNS.ward.forEach(w=>{const o=document.createElement("option");o.textContent=w;wsel.appendChild(o);}); }
+  const osel=document.getElementById("rpOrg");
+  if(osel && osel.options.length<=1){ (DROPDOWNS.orgSub||["MRSA","MRO ACB","ESBL KPN","ESBL E Coli","CRE","VRE","MRO others","ESBL others"]).forEach(o=>{const e=document.createElement("option");e.textContent=o;osel.appendChild(e);}); }
+  buildChecklist("rpFindings",RP_FINDINGS);
+  buildChecklist("rpRecs",RP_RECS);
+  buildChecklist("rpConcl",RP_CONCL);
+  const g=document.getElementById("rpGraphs");
+  if(g && !g.children.length){ g.innerHTML=RP_GRAPH_OPTIONS.map((x)=>checkRow("g_"+x[0],x[1],false)).join(""); }
+}
+function checkRow(id,text,checked){
+  return `<label class="rp-check"><input type="checkbox" ${checked?"checked":""} data-cid="${id}"><textarea rows="2" class="rp-text">${text}</textarea></label>`;
+}
+function buildChecklist(containerId,items){
+  const el=document.getElementById(containerId); if(!el||el.children.length)return;
+  el.innerHTML=items.map((t,i)=>checkRow(containerId+"_"+i,t,true)).join("");
+}
+function addCustom(containerId){
+  const el=document.getElementById(containerId); if(!el)return;
+  const div=document.createElement("div"); div.innerHTML=checkRow(containerId+"_c"+Date.now(),"",true);
+  el.appendChild(div.firstChild);
+}
+function onReportType(){
+  const t=document.getElementById("rpType").value;
+  document.getElementById("rpMyhub").classList.toggle("hidden",t!=="myhub");
+  document.getElementById("rpForm").classList.toggle("hidden",t==="myhub");
+}
+function openMyHub(){ window.open(MYHUB_URL,"_blank"); }
+function collectChecked(containerId){
+  const el=document.getElementById(containerId); if(!el)return [];
+  return Array.from(el.querySelectorAll(".rp-check")).filter(l=>l.querySelector("input").checked)
+    .map(l=>l.querySelector(".rp-text").value.trim()).filter(Boolean);
+}
+function generateReport(){
+  const type=document.getElementById("rpType").value;
+  const cat=document.getElementById("rpCategory").value;
+  const ward=document.getElementById("rpWard").value||"—";
+  const org=document.getElementById("rpOrg").value||"—";
+  const refNum=(document.getElementById("rpRef").value||"").trim();
+  const ref=`BIL (${refNum||"   "}) dalam JKI/HTPN/26`;
+  const findings=collectChecked("rpFindings");
+  const recs=collectChecked("rpRecs");
+  const concl=collectChecked("rpConcl");
+  const graphs=RP_GRAPH_OPTIONS.filter(x=>{const c=document.querySelector(`#rpGraphs input[data-cid="g_${x[0]}"]`);return c&&c.checked;});
+  const chartMap={rate:"chartRate",org:"chartOrg",dept:"chartDept",infdept:"chartInfDept",hhward:"hhWard",hhtrend:"hhTrend",hhmoment:"hhMoment",hhprof:"hhProf"};
+  const imgs=[];
+  graphs.forEach(g=>{ const cv=document.getElementById(chartMap[g[0]]); if(cv&&cv.toDataURL){ try{ imgs.push([g[1],cv.toDataURL("image/png")]); }catch(e){} } });
+  openReportWindow({type,cat,ward,org,ref,findings,recs,concl,imgs});
+}
+function openLaporanWindow(d){
+  const today=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
+  const catTxt=d.cat==="outbreak"?"OUTBREAK":"PENINGKATAN KES";
+  const li=(arr)=>arr.map(x=>`<li>${x}</li>`).join("");
+  const graphHtml=d.imgs.length?d.imgs.map(im=>`<div class="g"><div class="gc">${im[0]}</div><img src="${im[1]}"></div>`).join(""):`<p style="color:#666">(Tiada graf dipilih)</p>`;
+  const orgTxt=`<i>${d.org}</i>`;
+  const catWord=d.cat==="outbreak"?"outbreak":"peningkatan kes";
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Laporan ${d.org} ${d.ward}</title>
+  <style>
+    @page{margin:2cm}
+    *{box-sizing:border-box}
+    body{font-family:'Times New Roman',serif;color:#000;line-height:1.55;font-size:12pt;max-width:800px;margin:0 auto;padding:20px}
+    .head{text-align:center;margin-bottom:6px}
+    .head img{height:90px;width:auto;margin-bottom:4px}
+    .head .k{font-size:11pt;font-weight:bold}
+    .title{text-align:center;font-weight:bold;font-size:14pt;margin:16px 0 6px;text-transform:uppercase}
+    .subtitle{text-align:center;font-size:12pt;margin-bottom:20px}
+    h2{font-size:12pt;font-weight:bold;margin:20px 0 6px;text-transform:uppercase;border-bottom:1.5px solid #000;padding-bottom:3px}
+    p{margin:8px 0;text-align:justify}
+    ol,ul{margin:8px 0;padding-left:26px} li{margin-bottom:6px}
+    table.info{width:100%;border-collapse:collapse;margin:10px 0;font-size:11pt}
+    table.info td{border:1px solid #000;padding:6px 9px} table.info td:first-child{width:38%;font-weight:bold;background:#f2f2f2}
+    .g{margin:14px 0;page-break-inside:avoid} .gc{font-weight:bold;font-size:10.5pt;margin-bottom:5px} .g img{width:100%;border:1px solid #bbb}
+    .signs{display:flex;justify-content:space-between;margin-top:50px;gap:30px}
+    .sigbox{flex:1} .sigbox .line{margin-top:46px;border-bottom:1px dotted #000;height:1px}
+    .sigbox .r{font-size:11pt;margin-top:6px}
+    .noprint{position:fixed;top:10px;right:10px} @media print{.noprint{display:none}}
+    button{padding:10px 16px;font-size:14px;border:none;background:#e23b3b;color:#fff;border-radius:8px;cursor:pointer;font-family:sans-serif}
+  </style></head><body>
+  <div class="noprint"><button onclick="window.print()">Save as PDF / Print</button></div>
+  <div class="head">
+    <img src="${JATA_IMG}" alt="Jata Malaysia">
+    <div class="k">KEMENTERIAN KESIHATAN MALAYSIA</div>
+    <div class="k">HOSPITAL TENGKU PERMAISURI NORASHIKIN</div>
+  </div>
+  <div class="title">Laporan Siasatan Kawalan Infeksi</div>
+  <div class="subtitle">${catTxt} ${d.org} DI ${d.ward}</div>
+  <table class="info">
+    <tr><td>No. Rujukan</td><td>${d.ref}</td></tr>
+    <tr><td>Tarikh Laporan</td><td>${today}</td></tr>
+    <tr><td>Organisma</td><td>${d.org}</td></tr>
+    <tr><td>Ward / Jabatan</td><td>${d.ward}</td></tr>
+    <tr><td>Jenis</td><td>${d.cat==="outbreak"?"Outbreak":"Peningkatan kes"}</td></tr>
+    <tr><td>Disediakan oleh</td><td>Unit Kawalan Infeksi (UKI), HTPN</td></tr>
+  </table>
+
+  <h2>1.0 Pengenalan</h2>
+  <p>Laporan ini disediakan oleh Unit Kawalan Infeksi (UKI) berhubung ${catWord} ${orgTxt} yang dikenal pasti di <b>${d.ward}</b>, Hospital Tengku Permaisuri Norashikin. Laporan ini bertujuan untuk memaklumkan penemuan siasatan, analisis punca, serta cadangan tindakan kawalan bagi mencegah penyebaran selanjutnya.</p>
+
+  <h2>2.0 Latar Belakang</h2>
+  <p>${orgTxt} merupakan organisma Multidrug-Resistant Organism (MDRO) yang berpotensi merebak melalui <i>direct</i> dan <i>indirect transmission</i>, termasuk daripada permukaan/persekitaran tercemar apabila berlaku ketidakpatuhan terhadap amalan kawalan infeksi. Pemantauan dan siasatan telah dijalankan melalui rondaan wad dan audit kawalan infeksi.</p>
+
+  <h2>3.0 Penemuan Siasatan</h2>
+  ${d.findings.length?`<p>Hasil pemantauan dan audit mendapati perkara berikut:</p><ol>${li(d.findings)}</ol>`:`<p>Tiada penemuan direkodkan.</p>`}
+
+  <h2>4.0 Analisis &amp; Penilaian Risiko</h2>
+  <p>Berdasarkan graf surveilans (Lampiran), trend kes ${orgTxt} di ${d.ward} menunjukkan peningkatan yang memerlukan tindakan kawalan segera. Faktor risiko utama yang dikenal pasti berkait rapat dengan penemuan di Seksyen 3.0 — terutamanya kepatuhan kebersihan tangan, pembersihan persekitaran, dan amalan kawalan infeksi semasa penjagaan pesakit.</p>
+  ${graphHtml}
+
+  <h2>5.0 Cadangan Tindakan</h2>
+  ${d.recs.length?`<ol>${li(d.recs)}</ol>`:`<p>Tiada cadangan direkodkan.</p>`}
+
+  <h2>6.0 Kesimpulan</h2>
+  ${d.concl.length?d.concl.map(c=>`<p>${c}</p>`).join(""):`<p>Pencegahan jangkitan adalah tanggungjawab bersama. Kerjasama semua pihak amat diperlukan untuk mengawal ${catWord} ini.</p>`}
+
+  <div class="signs">
+    <div class="sigbox">
+      <p>Disediakan oleh,</p>
+      <div class="line"></div>
+      <div class="r">(...............................................)<br>Pegawai Kawalan Infeksi<br>Unit Kawalan Infeksi, HTPN<br>Tarikh: ..................</div>
+    </div>
+    <div class="sigbox">
+      <p>Disemak &amp; disahkan oleh,</p>
+      <div class="line"></div>
+      <div class="r"><b>(DR NOR ZAILA BINTI ZAIDAN)</b><br>Pakar Perubatan Dalaman &amp;<br>Ketua Unit Kawalan Infeksi, HTPN<br>MMC 44999 &nbsp; Tarikh: ..................</div>
+    </div>
+  </div>
+  </body></html>`;
+  const w=window.open("","_blank");
+  if(!w){ toast("Sila benarkan popup untuk jana laporan"); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+
+function openReportWindow(d){
+  if(d.type==="report"){ openLaporanWindow(d); return; }
+  const today=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
+  const isMemo=true;
+  const title="MEMO ANTARA JABATAN<br>(UNIT KAWALAN INFEKSI)";
+  const catTxt=d.cat==="outbreak"?"OUTBREAK":"PENINGKATAN KES";
+  const subject=`PEMAKLUMAN ${catTxt} ${d.org} DI ${d.ward}`;
+  const li=(arr)=>arr.map(x=>`<li>${x}</li>`).join("");
+  const graphHtml=d.imgs.length?`<h3 style="text-align:center;margin-bottom:14px">LAMPIRAN — GRAF SURVEILANS</h3>`+d.imgs.map(im=>`<div class="g"><div class="gc">${im[0]}</div><img src="${im[1]}"></div>`).join(""):"";
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${isMemo?"Memo":"Laporan"} ${d.org} ${d.ward}</title>
+  <style>
+    @page{margin:2cm}
+    *{box-sizing:border-box}
+    body{font-family:'Times New Roman',serif;color:#000;line-height:1.5;font-size:12pt;max-width:800px;margin:0 auto;padding:20px}
+    .head{text-align:center;margin-bottom:6px}
+    .head img{height:90px;width:auto;margin-bottom:4px}
+    .head .k{font-size:11pt;font-weight:bold;letter-spacing:.2px}
+    .title{text-align:center;font-weight:bold;font-size:13pt;margin:14px 0 16px;text-decoration:none}
+    table.meta{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11pt}
+    table.meta td{border:1px solid #000;padding:6px 9px;vertical-align:top}
+    .subject{font-weight:bold;text-transform:uppercase}
+    p{margin:10px 0;text-align:justify}
+    .para{display:flex;gap:10px} .para .n{font-weight:bold;min-width:22px}
+    ol{margin:8px 0;padding-left:26px} li{margin-bottom:6px}
+    ul{margin:6px 0;padding-left:24px}
+    h3{font-size:12pt;margin:18px 0 8px}
+    .g{margin:14px 0;page-break-inside:avoid} .gc{font-weight:bold;font-size:10.5pt;margin-bottom:5px} .g img{width:100%;border:1px solid #bbb}
+    .sign{margin-top:44px} .sign .line{margin-top:44px;border-bottom:1px dotted #000;width:270px;height:1px}
+    .noprint{position:fixed;top:10px;right:10px} @media print{.noprint{display:none}}
+    button{padding:10px 16px;font-size:14px;border:none;background:#e23b3b;color:#fff;border-radius:8px;cursor:pointer;font-family:sans-serif}
+  </style></head><body>
+  <div class="noprint"><button onclick="window.print()">Save as PDF / Print</button></div>
+  <div class="head">
+    <img src="${JATA_IMG}" alt="Jata Malaysia">
+    <div class="k">KEMENTERIAN KESIHATAN MALAYSIA</div>
+    <div class="k">HOSPITAL TENGKU PERMAISURI NORASHIKIN</div>
+  </div>
+  <div class="title">${title}</div>
+  <table class="meta">
+    <tr><td style="width:58%"><b>NO. RUJUKAN</b>: ${d.ref}</td><td><b>Tarikh:</b> ${today}</td></tr>
+    <tr><td><b>KEPADA</b><br>Ketua Jabatan / Senarai Edaran</td><td rowspan="2"><b>s.k –</b><br>&bull; Fail Unit Kawalan Infeksi</td></tr>
+    <tr><td><b>DARIPADA</b><br>Ketua Unit Kawalan Infeksi</td></tr>
+    <tr><td colspan="2"><span class="subject">PERKARA: PEMAKLUMAN ${catTxt} <i>${d.org}</i> DI ${d.ward}</span></td></tr>
+  </table>
+  <p>YBrs. Dr./Tuan/Puan,</p>
+  <p>Dengan hormatnya merujuk kepada perkara di atas.</p>
+  <div class="para"><span class="n">2.</span><span>Untuk makluman, terdapat ${d.cat==="outbreak"?"<b>outbreak</b>":"peningkatan kes"} <i>${d.org}</i> di <b>${d.ward}</b> di HTPN. Graf taburan kes dan penilaian risiko pesakit disertakan di Lampiran.</span></div>
+  ${d.findings.length?`<div class="para"><span class="n">3.</span><span>Pemantauan melalui rondaan wad dan audit kawalan infeksi mendapati perkara berikut:</span></div><ol>${li(d.findings)}</ol>`:""}
+  ${d.recs.length?`<div class="para"><span class="n">4.</span><span>Sehubungan itu, UKI memohon kerjasama untuk melaksanakan tindakan penambahbaikan berikut dengan segera:</span></div><ol>${li(d.recs)}</ol>`:""}
+  ${d.concl.length?`<div class="para"><span class="n">5.</span><span>${d.concl.join("</span></div><div class=\"para\"><span class=\"n\">6.</span><span>")}</span></div>`:""}
+  <p style="margin-top:22px">Sekian, terima kasih.</p>
+  <p><b>"MALAYSIA MADANI"</b><br><b>"BERKHIDMAT UNTUK NEGARA"</b></p>
+  <div class="sign">
+    <p>Saya yang menjalankan amanah,</p>
+    <div class="line"></div>
+    <p style="margin-top:6px"><b>(DR NOR ZAILA BINTI ZAIDAN)</b><br>Pakar Perubatan Dalaman &amp; Ketua Unit Kawalan Infeksi<br>Hospital Tengku Permaisuri Norashikin<br>MMC 44999</p>
+  </div>
+  ${graphHtml?`<div style="page-break-before:always"></div>${graphHtml}`:""}
+  </body></html>`;
+  const w=window.open("","_blank");
+  if(!w){ toast("Sila benarkan popup untuk jana laporan"); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+
+/* ===== UKI: tukar paparan MDRO / Hand Hygiene ===== */
+function switchDashView(v){
+  document.getElementById("mdroGraphs").classList.toggle("hidden",v!=="mdro");
+  document.getElementById("hhGraphs").classList.toggle("hidden",v!=="hh");
+  if(v==="hh") setTimeout(renderHospitalHH,60); else setTimeout(renderCharts,60);
+}
+/* ===== WARD: tukar paparan MDRO / Hand Hygiene ===== */
+function switchWardView(v){
+  document.getElementById("wardMdroGraphs").classList.toggle("hidden",v!=="mdro");
+  document.getElementById("wardHHGraphs").classList.toggle("hidden",v!=="hh");
+  if(v==="hh") setTimeout(renderWardHH,60); else setTimeout(renderWardMdroOnly,60);
+}
+function hhAvgAcrossWards(month,field){
+  let sum=0,n=0;
+  for(const w in HH_DATA){ const d=HH_DATA[w][month]; if(d&&d[field]!=null){ sum+=d[field]; n++; } }
+  return n?Math.round(sum/n):null;
+}
+function renderHospitalHH(){
+  if(typeof Chart==="undefined") return;
+  const gridColor="rgba(255,255,255,.06)";
+  // bulan yg ada data
+  const allMonths=MONTH_LABELS.filter(m=>{for(const w in HH_DATA){if(HH_DATA[w][m])return true;}return false;});
+  const latest=allMonths[allMonths.length-1];
+  const lineOpts={scales:{y:{beginAtZero:true,max:100,grid:{color:gridColor},title:{display:true,text:"% compliance"}},x:{grid:{color:gridColor}}}};
+
+  // 1) overall by ward (latest month) - bar
+  const wards=Object.keys(HH_DATA).filter(w=>HH_DATA[w][latest]);
+  drawChart("hhWard","bar",{labels:wards,datasets:[{label:"Overall % ("+latest+")",data:wards.map(w=>HH_DATA[w][latest].overall),backgroundColor:wards.map(w=>HH_DATA[w][latest].overall>=HH_KPI?"#26c281":"#e23b3b"),borderRadius:6}]},
+    {scales:{y:{beginAtZero:true,max:100,grid:{color:gridColor}},x:{grid:{display:false}}},plugins:{legend:{display:false}}});
+  renderHHKpiAlerts("hhKpiAlerts", null);
+  { const below=wards.filter(w=>HH_DATA[w][latest].overall<HH_KPI);
+    setSummary("hhWard_sum",`<b>Analysis:</b> HH overall by ward in <b>${latest}</b> (KKM KPI ${HH_KPI}%). `+(below.length?`Below KPI: <span class="up">${below.join(", ")}</span>.`:`All wards meet KPI.`));
+    const trendVals=allMonths.map(m=>hhAvgAcrossWards(m,"overall"));
+    setSummary("hhTrend_sum",`<b>Analysis:</b> Hospital HH average <b>${trendVals[trendVals.length-1]}%</b> in ${latest}. ${trendText(trendVals)}. ${trendVals[trendVals.length-1]>=HH_KPI?'<span class="down">Meets</span>':'<span class="up">Below</span>'} KKM KPI ${HH_KPI}%.`);
+    const momAvg=[["m1",HH_MOMENTS[0]],["m2",HH_MOMENTS[1]],["m3",HH_MOMENTS[2]],["m4",HH_MOMENTS[3]],["m5",HH_MOMENTS[4]]].map(([k,n])=>[n,hhAvgAcrossWards(latest,k)]);
+    const lowMom=momAvg.filter(x=>x[1]!=null&&x[1]<HH_KPI).map(x=>`${x[0]} (${x[1]}%)`);
+    setSummary("hhMoment_sum",`<b>Analysis:</b> Hospital WHO moments in ${latest}. `+(lowMom.length?`Below KPI: <span class="up">${lowMom.join(", ")}</span>.`:`All moments meet KPI.`));
+    const profAvg=[["doctor","Doctor"],["nurse","Nurse"],["hca","HCA"],["others","Others"]].map(([k,n])=>[n,hhAvgAcrossWards(latest,k)]);
+    const lowProf=profAvg.filter(x=>x[1]!=null&&x[1]<HH_KPI).map(x=>`${x[0]} (${x[1]}%)`);
+    setSummary("hhProf_sum",`<b>Analysis:</b> Hospital by profession in ${latest}. `+(lowProf.length?`Below KPI: <span class="up">${lowProf.join(", ")}</span>.`:`All professions meet KPI.`)); }
+  // 2) hospital trend (purata semua ward)
+  drawChart("hhTrend","line",{labels:allMonths,datasets:[{label:"Hospital overall %",data:allMonths.map(m=>hhAvgAcrossWards(m,"overall")),borderColor:"#26c281",backgroundColor:"rgba(38,194,129,.15)",fill:true,tension:.3,pointRadius:4}]},
+    Object.assign({plugins:{legend:{display:false}}},lineOpts));
+  // 3) by moment (hospital avg)
+  const momKeys=["m1","m2","m3","m4","m5"]; const momColors=["#e23b3b","#ff5da2","#f4b400","#26c281","#4a9de8"];
+  drawChart("hhMoment","line",{labels:allMonths,datasets:momKeys.map((mk,i)=>({label:HH_MOMENTS[i],data:allMonths.map(m=>hhAvgAcrossWards(m,mk)),borderColor:momColors[i],backgroundColor:momColors[i],tension:.3,pointRadius:3,fill:false}))},
+    Object.assign({plugins:{legend:{display:true,labels:{boxWidth:11,font:{size:10}}}}},lineOpts));
+  // 4) by profession (hospital avg)
+  const profKeys=["doctor","nurse","hca","others"]; const profColors=["#e23b3b","#4a9de8","#26c281","#f4b400"];
+  drawChart("hhProf","line",{labels:allMonths,datasets:profKeys.map((pk,i)=>({label:HH_PROF[i],data:allMonths.map(m=>hhAvgAcrossWards(m,pk)),borderColor:profColors[i],backgroundColor:profColors[i],tension:.3,pointRadius:3,fill:false}))},
+    Object.assign({plugins:{legend:{display:true,labels:{boxWidth:11,font:{size:10}}}}},lineOpts));
+}
+
+
 /* tekan banner: master -> list masterlist tertunggak ; form -> list + dropdown mdro form */
 function gotoAlert(kind){
   switchTab("list");
@@ -928,7 +1926,16 @@ function viewHTML(p){
 }
 function shareLink(id){
   const p=PATIENTS.find(x=>x.id===id)||ALLDATA.find(x=>x.id===id);if(!p)return;
-  const link=GAS_URL?`${location.origin}${location.pathname}#form=${p.id}`:`https://[app-url]/#form=${p.id}`;
+  // guna APP_URL (Vercel). Kalau kosong, cuba location tapi hanya jika ia http(s).
+  let base=APP_URL;
+  if(!base){
+    if(location.protocol==="http:"||location.protocol==="https:") base=location.origin+location.pathname;
+  }
+  if(!base){
+    toast("Sila deploy app ke Vercel & isi APP_URL dulu — link belum boleh dikongsi");
+    return;
+  }
+  const link=`${base}#form=${p.id}`;
   const miss=REQUIRED.filter(k=>!p[k]||String(p[k]).trim()==="").map(k=>{const f=ALL_FIELDS.find(x=>x.k===k);return f?f.l:k;});
   const uname=wardToUser(p.ward);
   const cred=WARD_CREDS[uname]?WARD_CREDS[uname].pass:uname+"123";
@@ -1088,6 +2095,7 @@ function sendFeedback(){
   DROPDOWNS.specimen.forEach(s=>{const o=document.createElement("option");o.textContent=s;ns.appendChild(o);});
   document.getElementById("uPass").addEventListener("keydown",e=>{if(e.key==="Enter")loginUki();});
   document.getElementById("wardPass").addEventListener("keydown",e=>{if(e.key==="Enter")loginWard();});
+  loadRemember();
 })();
 </script>
 </body>
